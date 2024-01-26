@@ -1,0 +1,65 @@
+---
+title: "Lab 3: Depth-Damage Models"
+subtitle: "DataFrames and Distributions"
+author: "Your Name"
+date: 2024-01-26
+week: 3
+categories: [Lab]
+
+# code to use
+jupyter: julia-1.10
+
+format: 
+    html:
+        theme: spacelab
+        copy-code: true
+        code-overflow: wrap
+        toc: true
+        anchor-sections: true
+        callout-appearance: simple
+        reference-location: document
+        citations-hover: true
+        code-annotations: hover
+        code-line-numbers: true
+        html-math-method: katex
+
+    # YOU CAN DO PDF OR DOCX BUT NOT BOTH
+    # IF YOU UNCOMMENT docx, COMMENT OR DELETE pdf
+    pdf:
+        documentclass: article
+        fontsize: 11pt
+        geometry:
+            - margin=1in  
+        number-sections: true
+        code-line-numbers: true
+
+    #docx: 
+    #    toc: true
+    #    fig-format: png
+    #    number-sections: true
+    #    code-line-numbers: true
+
+date-format: "ddd., MMM. D"
+---
+
+
+```{julia}
+using CSV
+using DataFrames
+using DataFramesMeta
+using Distributions
+using Interpolations
+using Plots
+using StatsPlots
+using Unitful
+
+Plots.default(; margin=6Plots.mm)
+```
+
+# Site information
+
+# Depth-Damage
+
+# Expected annual damages
+
+# Discussion
