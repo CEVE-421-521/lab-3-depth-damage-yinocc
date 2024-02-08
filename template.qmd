@@ -1,8 +1,8 @@
 ---
 title: "Lab 3: Depth-Damage Models"
 subtitle: "DataFrames and Distributions"
-author: "Your Name"
-date: 2024-01-26
+author: "JIAYUE YIN"
+date: 2024-02-02
 week: 3
 categories: [Lab]
 
@@ -42,7 +42,6 @@ format:
 date-format: "ddd., MMM. D"
 ---
 
-
 ```{julia}
 using CSV
 using DataFrames
@@ -57,9 +56,120 @@ Plots.default(; margin=6Plots.mm)
 ```
 
 # Site information
+Site：The site of Galveston Pier 21, TX
+The definetion of near：within 1 km
+building： Fisherman's Wharf（which is about 150m away from this cite）
+Elevation: 3.98 feet 
+
+```{julia}
+haz_fl_dept = CSV.read("data/haz_fl_dept.csv", DataFrame)
+include("depthdamage.jl")
+```
 
 # Depth-Damage
 
-# Expected annual damages
+```{julia}
+row = @rsubset(
+    haz_fl_dept, :Description == "Cafeteria Restaurant, structure"
+)[
+    1,:,
+]
+dd = DepthDamageData(row)
+fieldnames(typeof(dd))
+```
 
+```{julia}
+scatter(
+    dd.depths,
+    dd.damages;
+    xlabel="Flood Depth at House",
+    ylabel="Damage (%)",
+    label="$(dd.description) ($(dd.source))",
+    legend=:bottomright,
+    size=(750, 500),
+)
+```
+
+```{julia}
+itp = let
+    depth_ft = ustrip.(u"ft", dd.depths)
+    damage_frac = dd.damages
+    Interpolations.LinearInterpolation(
+        depth_ft,
+        damage_frac;
+        extrapolation_bc=Interpolations.Flat(),
+    )
+end
+```
+
+```{julia}
+let
+    dmg_fn(x) = itp(ustrip.(u"ft", x))
+    dmg_fn.([3.1u"ft", 2.2u"m", 91.4u"inch"])
+end
+```
+
+```{julia}
+function get_depth_damage_function(
+    depth_train::Vector{<:T}, dmg_train::Vector{<:AbstractFloat}
+) where {T<:Unitful.Length}
+
+    # interpolate
+    depth_ft = ustrip.(u"ft", depth_train)
+    interp_fn = Interpolations.LinearInterpolation(
+        depth_ft,
+        dmg_train;
+        extrapolation_bc=Interpolations.Flat(),
+    )
+
+    damage_fn = function (depth::T2) where {T2<:Unitful.Length}
+        return interp_fn(ustrip.(u"ft", depth))
+    end
+    return damage_fn
+end
+damage_fn = get_depth_damage_function(dd.depths, dd.damages)
+p = let
+    depths = uconvert.(u"ft", (-7.0u"ft"):(1.0u"inch"):(30.0u"ft"))
+    damages = damage_fn.(depths)
+    scatter(
+        depths,
+        damages;
+        xlabel="Flood Depth",
+        ylabel="Damage (%)",
+        label="$(dd.description) ($(dd.source))",
+        legend=:bottomright,
+        size=(800, 400),
+        linewidth=2,
+    )
+end
+p
+```
+
+# Expected annual damages
+```{julia}
+gauge_dist = GeneralizedExtremeValue(5, 1.5, 0.1)
+p1 = plot(
+    gauge_dist;
+    xlabel="Water Level (ft)",
+    ylabel="Probability Density",
+    legend=:topright,
+    linewidth=2,
+)
+offset = 3.15 # house is 2.5 feet above gauge
+house_dist = GeneralizedExtremeValue(gauge_dist.μ - offset, gauge_dist.σ, gauge_dist.ξ)
+plot!(p1,house_dist,linewidth=2)
+```
+
+```{julia}
+N=1000000
+samp = rand(house_dist, N) .* 1.0u"ft"
+res = damage_fn.(samp)
+mean(res)
+```
+The result is 18.83%
 # Discussion
+The  
+If we chose a different buliding type for one story, Contents, fresh water, short duration(as it is on the example), the result will look like this (I didn't include the code here as it is just a slight change of above):
+
+
+The result will be 64.712%
